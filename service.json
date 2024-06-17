@@ -1,0 +1,140 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-08-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+
+    "name": {
+      "type": "string"
+    },
+
+    "clientId": {
+      "type": "string"
+    },
+
+    "domainHint": {
+      "type": "string"
+    },
+
+    "tenantId": {
+      "type": "string",
+      "defaultValue": "[subscription().tenantId]"
+    }
+  },
+  "variables": {
+  },
+
+  "resources": [
+
+
+    {
+      "name": "[concat(parameters('name'), '/authsettingsV2')]",
+      "apiVersion": "2021-03-01",
+      "type": "Microsoft.Web/sites/config",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ],
+      "properties": {
+        "platform": {
+          "enabled": true,
+          "runtimeVersion": "~1"
+
+        },
+        "globalValidation": {
+          "excludedPaths": [
+          ],
+          "requireAuthentication": true,
+          "unauthenticatedClientAction": "RedirectToLoginPage",
+          "redirectToProvider": "azureactivedirectory"
+        },
+        "identityProviders": {
+          "azureActiveDirectory": {
+            "enabled": true,
+            "registration": {
+              "openIdIssuer": "[concat('https://sts.windows.net/', parameters('tenantId'),'/v2.0')]",
+              "clientId": "[parameters('clientId')]",
+              "clientSecretSettingName": "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET"
+            },
+            "login": {
+              "disableWWWAuthenticate": false,
+              "loginParameters": [
+                "[concat('domain_hint=',parameters('domainHint'))]"
+              ]
+            },
+            "validation": {
+              "jwtClaimChecks": {},
+              "allowedAudiences": [
+              ],
+              "defaultAuthorizationPolicy": {
+                "allowedPrincipals": {}
+              }
+            },
+            "isAutoProvisioned": true
+          },
+          "facebook": {
+            "enabled": false,
+            "registration": {},
+            "login": {}
+          },
+          "gitHub": {
+            "enabled": false,
+            "registration": {},
+            "login": {}
+          },
+          "google": {
+            "enabled": false,
+            "registration": {},
+            "login": {},
+            "validation": {}
+          },
+          "twitter": {
+            "enabled": false,
+            "registration": {}
+          },
+          "legacyMicrosoftAccount": {
+            "enabled": false,
+            "registration": {},
+            "login": {},
+            "validation": {}
+          },
+          "apple": {
+            "enabled": false,
+            "registration": {},
+            "login": {}
+          }
+        },
+        "login": {
+          "routes": {},
+          "tokenStore": {
+            "enabled": true,
+            "tokenRefreshExtensionHours": 72,
+            "fileSystem": {},
+            "azureBlobStorage": {}
+          },
+          "preserveUrlFragmentsForLogins": false,
+          "cookieExpiration": {
+            "convention": "FixedTime",
+            "timeToExpiration": "08:00:00"
+          },
+          "nonce": {
+            "validateNonce": true,
+            "nonceExpirationInterval": "00:05:00"
+          }
+        },
+        "httpSettings": {
+          "requireHttps": true,
+          "routes": {
+            "apiPrefix": "/.auth"
+          },
+          "forwardProxy": {
+            "convention": "NoProxy"
+          }
+        }
+      }
+    }
+  ]
+}
